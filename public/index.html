@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SOCKET DEMO</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+</head>
+<body>
+  <h1> Chat room</h1>
+  <div id="content">
+
+  </div>
+  <div style="position: absolute; left: 0; bottom: 0; width: 100%">
+    <div class="div-input" style="width: 80%; float: left">
+      <input id='chat-input' name="input-chat" style="width: 100%"/>
+    </div>
+    <div class="div-button" style="width:18%; float: left; padding: 5px">
+      <button id="send-button" style="width: 150px; height: 30px"> Send</button>
+    </div>
+
+  </div>
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  <script>
+    const socket = io('http://localhost:3010');
+
+    $('#chat-input').keypress((event) => {
+      if(event.which === 13) {
+        const message = $('#chat-input').val();
+        if(message) {
+
+          socket.emit('chat', message);
+          $('#chat-input').val('');
+        }
+      }
+    })
+
+    $('#send-button').click(() => {
+      console.log('clicked');
+      const message = $('#chat-input').val();
+      if(message) {
+
+        socket.emit('chat', message);
+        $('#chat-input').val('');
+      }
+    });
+
+    socket.on('chat', (data) => {
+      $('#content').append(`${data.id}: ${data.message}<br>`);
+    })
+  </script>
+</body>
+</html>
