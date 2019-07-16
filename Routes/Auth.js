@@ -6,12 +6,8 @@ const { validationResult } = require('express-validator');
 const registerValidator = require('../App/Validators/registerValidator');
 
 // Router register.
-router.post('/register', registerValidator, (req, res, next) => {
-
-  const errors = validationResult(req);
-  console.log(errors);
-
-  AuthController.register({ req, res, next });
+router.post('/register', registerValidator, (req, res) => {
+  AuthController.register({ req, res });
 });
 
 // Router login.

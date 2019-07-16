@@ -31,11 +31,5 @@ router.delete('/:id', (req, res, next) =>　{
 });
 
 
-// Create.
-router.post('/', (req, res, next) => {
-  res.status(201).json({
-    message: 'Create success'
-  })
-});
 
 module.exports = router;

@@ -13,28 +13,18 @@ class AuthMiddleware {
    * @param res Response
    * @param next Next function
    */
-  auth({ req, res, next }) {
-    const { headers } = req;
-    const token = headers.authorization;
-
-    // Check token is exist.
-    if(!token) {
-      return next({
-        message: 'UnAuthorization',
-        data: null
-      });
+  async auth({ req, res, next }) {
+    const header = req.headers['authorization'];
+    const token = header.split(' ')[1];
+    let check_token = await this.tokenModel.query().where({token, status: 1}).first();
+    if(!check_token){
+        return res.status(403).json({
+            message: 'User not exist or this token has expired',
+            data: null
+        })
     }
-
-    const dataToken = jwt.decode(Env.APP_KEY, token);
-
-    if(!dataToken.value) {
-      return next({
-        message: 'UnAuthorization',
-        data: null
-      });
-    }
-
-    req.user = dataToken.value;
+    req.token = token;
+    req.userId = check_token.user_id;
     next();
   }
 

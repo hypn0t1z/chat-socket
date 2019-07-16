@@ -1,6 +1,9 @@
-const UserModel = require('../Models/UserModel');
-const TokenModel = require('../Models/TokenModel');
+const UserModel = require('../Models/Mongodb/UserModel');
+const TokenModel = require('../Models/Mongodb/TokenModel');
 const jwt = require('json-web-token');
+const bcrypt = require('bcryptjs');
+const dotenv = require('dotenv');
+const {ENCODE_KEY} = process.env;
 
 class AuthService {
   constructor() {
@@ -13,63 +16,61 @@ class AuthService {
    * @param body
    * @returns {Promise<*>}
    */
-  async register(body) {
+  async register(req) {
     try {
+      const { body } = req;
+      const { USER_PASSWORD_SALT_ROUNDS: saltRounds = 10 } = process.env;
+      const passwordHash = await bcrypt.hash(body.password, +saltRounds);
 
-      // Step 2
-      if(!body.username || !body.password) {
-        return {
-          message: 'username_or_password_is_required',
-          data: null
-        }
-      }
-
-      // Step 3
-      const user = await this.userModel.query()
-        .where('username', body.username)
-        .first();
-
-      // Step 4
-      if(user) {
-        return {
-          message: 'user_is_exist',
-          data: null
-        }
-      }
-
-      // Step 5
-      // TODO
-      const password = body.password;
-
-      const dataInsert = {
+      const userMongo = new this.userModel({
+        name: body.name,
         username: body.username,
-        password,
-        name: body.username
-      };
+        password: passwordHash
+      })
 
-      const userInserted = await this.userModel.query()
-        .insert(dataInsert);
+      await userMongo.save(err => {
+        if(err) {
+          return {
+            message: 'Register Failed',
+            data: err
+          }
+        }
+      })
 
-      let token = jwt.encode(Env.APP_KEY, {
-        id: userInserted.id,
-        timestamp: new Date().getTime()
-      });
+      let result = await this.token(userMongo._id);
+        if(!result) {
+          return {
+            message: 'Create token failed',
+            data: null
+          } 
+        }
+        return {
+          message: 'Register success !',
+          data: result.token
+        }
 
-      const dataTokenInsert = {
-        user_id: userInserted.id,
-        token: token.value,
-        status: 1
-      };
-
-      this.tokenModel.query().insert(dataTokenInsert);
-
-      return {
-        message: 'register_success',
-        data: token.value
-      };
     } catch (e) {
       console.log(e);
     }
+  }
+
+  async token(user_id) {
+    let token = await jwt.encode(ENCODE_KEY, {
+        id: user_id,
+        timestamp: new Date().getTime()
+    });
+    let dataToken = '';
+    let token_exist = await this.tokenModel.findOne({user_id}).exec();
+    if(token_exist){
+      dataToken = await token_exist.update({token: token.value});
+    }
+    else{
+      dataToken = await this.tokenModel.create({
+        token: token.value,
+        user_id
+      });
+    }
+    return dataToken;
   }
 }
 

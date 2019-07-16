@@ -2,8 +2,9 @@ const { body } = require('express-validator');
 
 module.exports = [
   body('username')
+    .not()
     .exists()
-    .withMessage('username_is_required')
+    .withMessage('username_is_existed')
     .not()
     .isEmpty()
     .withMessage('username_is_required'),
